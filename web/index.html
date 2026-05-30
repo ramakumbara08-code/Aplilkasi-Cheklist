@@ -1,0 +1,395 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+    <meta name="theme-color" content="#168eea">
+    <title>Aplikasi Checklist</title>
+    <base href="/web/">
+    <link rel="manifest" href="manifest.webmanifest">
+    <link rel="icon" href="assets/icon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="assets/icon.svg">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="assets/styles.css">
+  </head>
+  <body>
+    <main id="authScreen" class="auth-screen">
+      <section class="auth-hero text-center text-white">
+        <div class="hero-logo-wrap mx-auto mb-4">
+          <img id="authLogo" class="hero-logo-img d-none" alt="Logo institusi">
+          <div id="authLogoFallback" class="hero-logo" aria-hidden="true"></div>
+        </div>
+        <h1 id="authAppName" class="fw-black mb-3">Aplikasi<br>Checklist</h1>
+        <p id="authCampusName" class="mb-0">Checklist digital mahasiswa</p>
+      </section>
+
+      <section class="auth-card">
+        <div class="container-narrow auth-container">
+          <section id="authMenu" class="auth-menu">
+            <div class="auth-menu-head text-center">
+              <span class="eyebrow">Pilih Layanan</span>
+              <h2 class="section-title mb-2">Akses Aplikasi Checklist</h2>
+            </div>
+            <div class="auth-choice-grid">
+              <button class="auth-choice" type="button" data-auth-panel="loginPane">
+                <span class="choice-icon">A</span>
+                <strong>Login Petugas</strong>
+                <small>Admin, loby, dan tim ACC</small>
+              </button>
+              <button class="auth-choice" type="button" data-auth-panel="studentPane">
+                <span class="choice-icon">M</span>
+                <strong>Cari Checklist Mahasiswa</strong>
+                <small>Lihat progress checklist tanpa login</small>
+              </button>
+            </div>
+          </section>
+
+          <section id="loginPane" class="auth-page d-none">
+            <section class="auth-panel">
+              <div class="auth-panel-head">
+                <div>
+                  <span class="eyebrow">Petugas</span>
+                  <h2 class="section-title mb-0">Login Petugas</h2>
+                </div>
+                <button class="btn btn-light btn-sm" type="button" data-auth-panel="authMenu">Kembali</button>
+              </div>
+              <form id="loginForm" class="vstack gap-3" autocomplete="off">
+                <label class="form-label-group">
+                  <span>Username</span>
+                  <input class="form-control form-control-lg" name="username" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="Masukkan username" required>
+                </label>
+                <label class="form-label-group">
+                  <span>Sandi</span>
+                  <input class="form-control form-control-lg" name="password" type="password" autocomplete="new-password" data-lpignore="true" data-1p-ignore="true" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="Masukkan sandi" required>
+                </label>
+                <button class="btn btn-gradient btn-lg w-100" type="submit">Masuk Sistem</button>
+              </form>
+            </section>
+          </section>
+
+          <section id="studentPane" class="auth-page d-none">
+            <section class="auth-panel">
+              <div class="auth-panel-head">
+                <div>
+                  <span class="eyebrow">Mahasiswa</span>
+                  <h2 class="section-title mb-0">Cari Checklist</h2>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                  <span id="publicCount" class="soft-badge">0 data</span>
+                  <button class="btn btn-light btn-sm" type="button" data-auth-panel="loginPane">Login Petugas</button>
+                  <button class="btn btn-light btn-sm" type="button" data-auth-panel="authMenu">Kembali</button>
+                </div>
+              </div>
+              <form id="publicSearchForm" class="vstack gap-3">
+                <label class="form-label-group">
+                  <span>Kategori</span>
+                  <select id="publicCategory" class="form-select form-select-lg" name="categoryId">
+                    <option value="">Semua kategori</option>
+                  </select>
+                </label>
+                <label class="form-label-group">
+                  <span>Nama / NIM / Jurusan</span>
+                  <input class="form-control form-control-lg" name="keyword" placeholder="Contoh: 231234 atau Budi">
+                </label>
+                <button class="btn btn-gradient btn-lg w-100" type="submit">Cari Data</button>
+              </form>
+              <div id="publicResults" class="result-list"></div>
+              <div id="publicDetail" class="detail-slot"></div>
+            </section>
+          </section>
+        </div>
+      </section>
+    </main>
+
+    <main id="verifyScreen" class="app-screen d-none">
+      <div class="container-narrow py-4">
+        <section class="app-card">
+          <div class="app-card-head">
+            <div>
+              <span class="eyebrow">Verifikasi</span>
+              <h1 class="h4 mb-0">Data Checklist Digital</h1>
+            </div>
+            <span id="verifyBadge" class="soft-badge">Memuat</span>
+          </div>
+          <div id="verifyContent" class="p-3 p-md-4"></div>
+        </section>
+      </div>
+    </main>
+
+    <main id="appScreen" class="app-screen d-none">
+      <header class="app-header">
+        <div class="container-narrow d-flex align-items-center justify-content-between gap-3">
+          <div>
+            <h1 id="appName" class="h5 mb-1">Aplikasi Checklist</h1>
+            <div id="userBadge" class="small text-muted">-</div>
+          </div>
+          <button id="logoutBtn" class="btn btn-outline-danger btn-sm" type="button">Keluar</button>
+        </div>
+      </header>
+
+      <div class="container-narrow app-content">
+        <section id="roleHomeView" class="role-view">
+          <section class="dashboard-card">
+            <div class="dashboard-brand">
+              <div class="dashboard-logo-box">
+                <img id="dashboardLogo" class="dashboard-logo-img d-none" alt="Logo institusi">
+                <span id="dashboardLogoFallback">C</span>
+              </div>
+              <div>
+                <span id="dashboardRoleLabel">Panel</span>
+                <h2 id="dashboardInstitution" class="mb-1">Aplikasi Checklist</h2>
+                <p id="dashboardFaculty" class="mb-0">Checklist digital mahasiswa</p>
+              </div>
+            </div>
+            <div id="dashboardStats" class="dashboard-stats"></div>
+          </section>
+
+          <section class="app-card mt-3">
+            <div class="app-card-head">
+              <h2 class="section-title mb-0">Menu Panel</h2>
+            </div>
+            <div id="panelMenu" class="panel-menu-grid"></div>
+          </section>
+        </section>
+
+        <section id="adminView" class="role-view d-none">
+          <div id="adminCategoriesPanel" class="app-panel">
+            <section class="app-card">
+              <div class="app-card-head">
+                <h2 class="section-title mb-0">Kategori Checklist</h2>
+              </div>
+              <form id="categoryForm" class="p-3 p-md-4 row g-3">
+                <input type="hidden" name="id">
+                <label class="col-md-7 form-label-group">
+                  <span>Nama Kategori</span>
+                  <input class="form-control form-control-lg" name="name" required>
+                </label>
+                <label class="col-md-5 form-label-group">
+                  <span>Status</span>
+                  <select class="form-select form-select-lg" name="active">
+                    <option value="true">Aktif</option>
+                    <option value="false">Nonaktif</option>
+                  </select>
+                </label>
+                <label class="col-12 form-label-group">
+                  <span>Deskripsi</span>
+                  <textarea class="form-control" name="description"></textarea>
+                </label>
+                <div class="col-12 d-grid gap-2 d-md-flex">
+                  <button id="categorySubmitBtn" class="btn btn-gradient btn-lg flex-fill" type="submit">Tambah Kategori Baru</button>
+                  <button class="btn btn-light btn-lg flex-fill" type="button" data-reset-form="categoryForm">Bersihkan Form</button>
+                </div>
+              </form>
+            </section>
+            <section class="app-card mt-3">
+              <div class="app-card-head"><h3 class="section-title mb-0">Daftar Kategori</h3></div>
+              <div id="categoryList" class="entity-list"></div>
+            </section>
+          </div>
+
+          <div id="adminItemsPanel" class="app-panel d-none">
+            <section class="app-card">
+              <div class="app-card-head"><h2 class="section-title mb-0">Item Checklist</h2></div>
+              <form id="itemForm" class="p-3 p-md-4 row g-3">
+                <input type="hidden" name="id">
+                <label class="col-md-8 form-label-group">
+                  <span>Kategori</span>
+                  <select id="itemCategory" class="form-select form-select-lg" name="categoryId" required></select>
+                </label>
+                <label class="col-md-4 form-label-group">
+                  <span>Urutan</span>
+                  <input class="form-control form-control-lg" name="sortOrder" type="number" min="0" value="0">
+                </label>
+                <label class="col-md-8 form-label-group">
+                  <span>Nama Item</span>
+                  <input class="form-control form-control-lg" name="name" required>
+                </label>
+                <label class="col-md-4 form-label-group">
+                  <span>Status</span>
+                  <select class="form-select form-select-lg" name="active">
+                    <option value="true">Aktif</option>
+                    <option value="false">Nonaktif</option>
+                  </select>
+                </label>
+                <label class="col-12 form-label-group">
+                  <span>Deskripsi</span>
+                  <textarea class="form-control" name="description"></textarea>
+                </label>
+                <div class="col-12">
+                  <div class="fw-bold mb-2">Role yang dapat memberi ACC</div>
+                  <div id="itemRoleChecks" class="check-grid"></div>
+                </div>
+                <div class="col-12 d-grid gap-2 d-md-flex">
+                  <button id="itemSubmitBtn" class="btn btn-gradient btn-lg flex-fill" type="submit">Tambah Item Baru</button>
+                  <button class="btn btn-light btn-lg flex-fill" type="button" data-reset-form="itemForm">Bersihkan Form</button>
+                </div>
+              </form>
+            </section>
+            <section class="app-card mt-3">
+              <div class="app-card-head"><h3 class="section-title mb-0">Daftar Item</h3></div>
+              <div id="itemList" class="entity-list"></div>
+            </section>
+          </div>
+
+          <div id="adminRolesPanel" class="app-panel d-none">
+            <section class="app-card">
+              <div class="app-card-head"><h2 class="section-title mb-0">Role ACC</h2></div>
+              <form id="roleForm" class="p-3 p-md-4 row g-3">
+                <input type="hidden" name="id">
+                <label class="col-md-7 form-label-group">
+                  <span>Nama Role</span>
+                  <input class="form-control form-control-lg" name="name" required>
+                </label>
+                <label class="col-md-5 form-label-group">
+                  <span>Status</span>
+                  <select class="form-select form-select-lg" name="active">
+                    <option value="true">Aktif</option>
+                    <option value="false">Nonaktif</option>
+                  </select>
+                </label>
+                <label class="col-12 form-label-group">
+                  <span>Deskripsi</span>
+                  <textarea class="form-control" name="description"></textarea>
+                </label>
+                <div class="col-12 d-grid gap-2 d-md-flex">
+                  <button id="roleSubmitBtn" class="btn btn-gradient btn-lg flex-fill" type="submit">Tambah Role ACC Baru</button>
+                  <button class="btn btn-light btn-lg flex-fill" type="button" data-reset-form="roleForm">Bersihkan Form</button>
+                </div>
+              </form>
+            </section>
+            <section class="app-card mt-3">
+              <div class="app-card-head"><h3 class="section-title mb-0">Daftar Role</h3></div>
+              <div id="roleList" class="entity-list"></div>
+            </section>
+          </div>
+
+          <div id="adminUsersPanel" class="app-panel d-none">
+            <section class="app-card">
+              <div class="app-card-head"><h2 class="section-title mb-0">User Login</h2></div>
+              <form id="userForm" class="p-3 p-md-4 row g-3">
+                <input type="hidden" name="id">
+                <label class="col-md-6 form-label-group">
+                  <span>Username</span>
+                  <input class="form-control form-control-lg" name="username" autocomplete="off" required>
+                </label>
+                <label class="col-md-6 form-label-group">
+                  <span>Password</span>
+                  <input class="form-control form-control-lg" name="password" type="password" autocomplete="new-password" data-lpignore="true" data-1p-ignore="true" placeholder="Kosongkan jika tidak diubah">
+                </label>
+                <label class="col-md-6 form-label-group">
+                  <span>Nama Lengkap</span>
+                  <input class="form-control form-control-lg" name="fullName" required>
+                </label>
+                <label class="col-md-6 form-label-group">
+                  <span>Tipe Akun</span>
+                  <select id="userRoleType" class="form-select form-select-lg" name="roleType" required>
+                    <option value="SUPER_ADMIN">Admin Super</option>
+                    <option value="LOBBY">Tim Loby</option>
+                    <option value="APPROVER">Tim ACC</option>
+                  </select>
+                </label>
+                <label class="col-md-6 form-label-group">
+                  <span>Role ACC</span>
+                  <select id="userApproverRole" class="form-select form-select-lg" name="approverRole"></select>
+                </label>
+                <label class="col-md-6 form-label-group">
+                  <span>Status</span>
+                  <select class="form-select form-select-lg" name="active">
+                    <option value="true">Aktif</option>
+                    <option value="false">Nonaktif</option>
+                  </select>
+                </label>
+                <div class="col-12 d-grid gap-2 d-md-flex">
+                  <button id="userSubmitBtn" class="btn btn-gradient btn-lg flex-fill" type="submit">Tambah User Baru</button>
+                  <button class="btn btn-light btn-lg flex-fill" type="button" data-reset-form="userForm">Bersihkan Form</button>
+                </div>
+              </form>
+            </section>
+            <section class="app-card mt-3">
+              <div class="app-card-head"><h3 class="section-title mb-0">Daftar User</h3></div>
+              <div id="userList" class="entity-list"></div>
+            </section>
+          </div>
+
+          <div id="adminSettingsPanel" class="app-panel d-none">
+            <section class="app-card">
+              <div class="app-card-head"><h2 class="section-title mb-0">Pengaturan Cetak</h2></div>
+              <form id="settingsForm" class="p-3 p-md-4 row g-3">
+                <label class="col-12 form-label-group"><span>URL Logo</span><input class="form-control form-control-lg" name="logoUrl" placeholder="https://.../logo.png"></label>
+                <label class="col-md-6 form-label-group"><span>Nama Aplikasi</span><input class="form-control form-control-lg" name="appName"></label>
+                <label class="col-md-6 form-label-group"><span>Judul Print</span><input class="form-control form-control-lg" name="printTitle"></label>
+                <label class="col-md-6 form-label-group"><span>Institusi</span><input class="form-control form-control-lg" name="institutionName"></label>
+                <label class="col-md-6 form-label-group"><span>Fakultas / Unit</span><input class="form-control form-control-lg" name="facultyName"></label>
+                <label class="col-md-6 form-label-group"><span>Nama Dekan</span><input class="form-control form-control-lg" name="deanName"></label>
+                <label class="col-md-6 form-label-group"><span>NIP / NIDN Dekan</span><input class="form-control form-control-lg" name="deanNip"></label>
+                <label class="col-md-6 form-label-group"><span>Kota TTD</span><input class="form-control form-control-lg" name="signatureCity"></label>
+                <div class="col-12">
+                  <button class="btn btn-gradient btn-lg w-100" type="submit">Simpan Pengaturan</button>
+                </div>
+              </form>
+            </section>
+          </div>
+        </section>
+
+        <section id="lobbyView" class="role-view d-none">
+          <div id="lobbyRegisterPanel" class="app-panel">
+            <section class="app-card">
+              <div class="app-card-head"><h2 class="section-title mb-0">Daftar Checklist</h2></div>
+              <form id="registerForm" class="p-3 p-md-4 vstack gap-3">
+                <label class="form-label-group"><span>Kategori</span><select id="registerCategory" class="form-select form-select-lg" name="categoryId" required></select></label>
+                <label class="form-label-group"><span>Nama Mahasiswa</span><input class="form-control form-control-lg" name="studentName" required></label>
+                <label class="form-label-group"><span>NIM</span><input class="form-control form-control-lg" name="nim" required></label>
+                <label class="form-label-group"><span>Jurusan</span><input class="form-control form-control-lg" name="jurusan" required></label>
+                <button class="btn btn-gradient btn-lg" type="submit">Daftarkan</button>
+              </form>
+            </section>
+            <div id="lobbyRegisterDetail" class="detail-slot"></div>
+          </div>
+
+          <div id="lobbyDataPanel" class="app-panel d-none">
+            <section class="app-card">
+              <div class="app-card-head">
+                <h2 class="section-title mb-0">Data Checklist</h2>
+                <span id="lobbyCount" class="soft-badge">0 data</span>
+              </div>
+              <form id="lobbySearchForm" class="p-3 p-md-4 row g-3">
+                <label class="col-md-4 form-label-group"><span>Kategori</span><select id="lobbyCategory" class="form-select form-select-lg" name="categoryId"></select></label>
+                <label class="col-md-5 form-label-group"><span>Nama / NIM / Jurusan</span><input class="form-control form-control-lg" name="keyword"></label>
+                <label class="col-md-3 form-label-group"><span>Status</span><select class="form-select form-select-lg" name="status"><option value="">Semua</option><option value="PENDING">Belum Lengkap</option><option value="COMPLETE">Lengkap</option></select></label>
+                <div class="col-12"><button class="btn btn-gradient btn-lg w-100" type="submit">Cari</button></div>
+              </form>
+            </section>
+            <div id="lobbyResults" class="result-list"></div>
+            <div id="lobbyDetail" class="detail-slot"></div>
+          </div>
+        </section>
+
+        <section id="approveView" class="role-view d-none">
+          <section class="app-card">
+            <div class="app-card-head">
+              <h2 class="section-title mb-0">ACC Checklist</h2>
+              <span id="approverRoleBadge" class="soft-badge">-</span>
+            </div>
+            <form id="approverSearchForm" class="p-3 p-md-4 row g-3">
+              <label class="col-md-4 form-label-group"><span>Kategori</span><select id="approverCategory" class="form-select form-select-lg" name="categoryId"></select></label>
+              <label class="col-md-5 form-label-group"><span>Nama / NIM / Jurusan</span><input class="form-control form-control-lg" name="keyword"></label>
+              <label class="col-md-3 form-label-group"><span>Status</span><select class="form-select form-select-lg" name="status"><option value="">Semua</option><option value="PENDING">Belum Lengkap</option><option value="COMPLETE">Lengkap</option></select></label>
+              <div class="col-12"><button class="btn btn-gradient btn-lg w-100" type="submit">Cari</button></div>
+            </form>
+          </section>
+          <div id="approverResults" class="result-list"></div>
+          <div id="approverDetail" class="detail-slot"></div>
+        </section>
+      </div>
+
+      <nav id="bottomNav" class="bottom-nav" aria-label="Navigasi aplikasi"></nav>
+    </main>
+
+    <div id="loading" class="loading d-none">Memproses...</div>
+    <div id="toast" class="toast-box d-none"></div>
+    <section id="printArea" class="print-area" aria-hidden="true"></section>
+
+    <script src="src/config.js"></script>
+    <script src="src/app.js" defer></script>
+  </body>
+</html>
