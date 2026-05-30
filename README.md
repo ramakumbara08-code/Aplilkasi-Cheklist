@@ -35,6 +35,8 @@ Setelah file GAS disalin:
 
 Folder ini yang dipush ke GitHub dan dideploy ke Vercel.
 
+Jika Vercel tidak menampilkan pilihan `Root Directory`, biarkan saja. File `index.html` di root proyek akan otomatis membuka aplikasi di `web/index.html`.
+
 URL GAS tidak ditempel di kode `index.html` atau `src/app.js`.
 
 Untuk deploy Vercel, paste URL GAS di:
