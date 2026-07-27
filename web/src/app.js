@@ -36,6 +36,13 @@ const crudLabels = {
   userForm: ['Tambah User Baru', 'Simpan Perubahan User']
 };
 
+const uploadRules = {
+  brandMaxBytes: 2.5 * 1024 * 1024,
+  evidenceMaxBytes: 3 * 1024 * 1024,
+  imageTypes: ['image/png', 'image/jpeg', 'image/webp'],
+  evidenceTypes: ['image/png', 'image/jpeg', 'image/webp', 'application/pdf']
+};
+
 const $ = (id) => document.getElementById(id);
 
 document.addEventListener('DOMContentLoaded', init);
@@ -112,6 +119,27 @@ async function api(action, payload = {}, token = state.token) {
   const data = await response.json().catch(() => null);
   if (!data) throw new Error('Respons server tidak valid.');
   if (!data.ok) throw new Error((data.error && data.error.message) || 'Permintaan gagal.');
+  return data.result;
+}
+
+async function apiUpload(action, payload = {}, token = state.token) {
+  const endpoint = window.UPLOAD_API_URL || '/api/gas';
+  let response;
+  try {
+    response = await fetch(endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action, payload, token })
+    });
+  } catch (err) {
+    const local = ['localhost', '127.0.0.1'].includes(window.location.hostname);
+    throw new Error(local
+      ? 'Proxy upload lokal belum aktif. Jalankan: node local-proxy.js'
+      : 'Endpoint upload Vercel belum dapat diakses. Upload folder api dan vercel.json terbaru, lalu redeploy Vercel.');
+  }
+  const data = await response.json().catch(() => null);
+  if (!data) throw new Error('Respons upload tidak valid.');
+  if (!data.ok) throw new Error((data.error && data.error.message) || 'Upload gagal.');
   return data.result;
 }
 
@@ -300,6 +328,7 @@ function renderAdmin() {
   renderItems(data.items, data.categories);
   renderUsers(data.users);
   fillSettingsForm(data.settings || {});
+  renderUploadSettings(data);
   renderHomeDashboard();
 }
 
@@ -394,8 +423,29 @@ async function onSaveUser(event) {
 async function onSaveSettings(event) {
   event.preventDefault();
   await run(async () => {
-    state.admin = await api('saveAppSettings', formToObject(event.target));
+    const payload = formToObject(event.target);
+    const logoFile = $('logoFile').files[0];
+    const letterheadFile = $('letterheadFile').files[0];
+    delete payload.logoFile;
+    delete payload.letterheadFile;
+
+    if (logoFile) {
+      state.admin = await apiUpload('uploadBrandAsset', {
+        kind: 'logo',
+        file: await fileToUploadPayload(logoFile, uploadRules.brandMaxBytes, uploadRules.imageTypes)
+      });
+    }
+    if (letterheadFile) {
+      state.admin = await apiUpload('uploadBrandAsset', {
+        kind: 'letterhead',
+        file: await fileToUploadPayload(letterheadFile, uploadRules.brandMaxBytes, uploadRules.imageTypes)
+      });
+    }
+
+    state.admin = await api('saveAppSettings', payload);
     state.settings = state.admin.settings || {};
+    $('logoFile').value = '';
+    $('letterheadFile').value = '';
     renderShell();
     renderAdmin();
     toast('Pengaturan tersimpan.');
@@ -463,11 +513,22 @@ async function loadApproverDetail(id) {
 
 async function approveItem(approvalId) {
   const noteInput = document.querySelector(`[data-note-for="${cssEscape(approvalId)}"]`);
+  const evidenceInput = document.querySelector(`[data-evidence-for="${cssEscape(approvalId)}"]`);
   await run(async () => {
-    const detail = await api('approveChecklistItem', {
+    const payload = {
       approvalId,
       note: noteInput ? noteInput.value : ''
-    });
+    };
+    if (evidenceInput && evidenceInput.files[0]) {
+      payload.evidence = await fileToUploadPayload(
+        evidenceInput.files[0],
+        uploadRules.evidenceMaxBytes,
+        uploadRules.evidenceTypes
+      );
+    }
+    const detail = payload.evidence
+      ? await apiUpload('approveChecklistItem', payload)
+      : await api('approveChecklistItem', payload);
     $('approverDetail').innerHTML = renderDetail(detail, { allowPrint: false, source: 'APPROVER' });
     toast('Item berhasil di-ACC.');
   });
@@ -532,9 +593,20 @@ function renderDetail(detail, options) {
     : '';
 
   const items = (detail.items || []).map((item) => {
+    const officer = [item.approvedBy, item.approverTitle || item.approverRole].filter(Boolean).join(' - ');
+    const evidenceLink = item.evidenceUrl
+      ? `<a class="btn btn-light btn-sm" href="${esc(item.evidenceUrl)}" target="_blank" rel="noopener">Buka Bukti: ${esc(item.evidenceFileName || 'Verifikasi')}</a>`
+      : '';
     const approveControl = source === 'APPROVER' && item.canApprove
-      ? `<div class="card-actions"><input class="form-control" data-note-for="${esc(item.approvalId)}" placeholder="Catatan opsional"><button class="btn btn-gradient" type="button" data-approve="${esc(item.approvalId)}">ACC</button></div>`
-      : `<div class="meta">${esc(item.note || item.approvedBy || '-')}</div>`;
+      ? `<div class="approval-controls">
+          <input class="form-control" data-note-for="${esc(item.approvalId)}" placeholder="Catatan opsional">
+          <label class="form-label-group mb-0">
+            <span>Bukti verifikasi (opsional)</span>
+            <input class="form-control" type="file" data-evidence-for="${esc(item.approvalId)}" accept="image/png,image/jpeg,image/webp,application/pdf">
+          </label>
+          <button class="btn btn-gradient" type="button" data-approve="${esc(item.approvalId)}">Upload Bukti &amp; ACC</button>
+        </div>`
+      : `<div class="meta">${esc(officer || '-')}</div><div class="meta">${esc(item.note || '')}</div>${evidenceLink}`;
     return `
       <div class="list-card">
         <div class="d-flex align-items-start justify-content-between gap-3">
@@ -583,6 +655,7 @@ async function openPrint(id) {
     });
     $('printArea').innerHTML = renderPrint(detail);
     await waitForImages($('printArea'), 3500);
+    fitPrintToOnePage();
     document.body.classList.add('printing');
     setTimeout(() => window.print(), 120);
   });
@@ -596,7 +669,7 @@ function renderPrint(detail) {
       <td>${index + 1}</td>
       <td>${esc(item.name)}</td>
       <td style="text-align:center">ACC</td>
-      <td>${esc(item.approvedBy)}</td>
+      <td><strong>${esc(item.approvedBy)}</strong><br><small>${esc(item.approverTitle || item.approverRole || '-')}</small></td>
       <td>${esc(item.approvedAt)}</td>
       <td>${esc(item.note || '')}</td>
     </tr>
@@ -604,16 +677,18 @@ function renderPrint(detail) {
 
   return `
     <div class="print-sheet">
-      <section class="print-head">
-        <div class="print-logo-box">
-          ${printLogo ? `<img class="print-logo" alt="Logo institusi" src="${esc(printLogo)}">` : `<div class="print-logo-placeholder">LOGO</div>`}
-        </div>
-        <div class="print-title-box">
-          <h1>${esc(settings.institutionName || '')}</h1>
-          <h2>${esc(settings.facultyName || '')}</h2>
-        </div>
-      </section>
-      <h2 style="text-align:center;margin:0 0 18px">${esc(settings.printTitle || 'LEMBAR CHECKLIST')}</h2>
+      ${settings.letterheadUrl
+        ? `<section class="print-letterhead"><img alt="Kop surat" src="${esc(settings.letterheadUrl)}"></section>`
+        : `<section class="print-head">
+            <div class="print-logo-box">
+              ${printLogo ? `<img class="print-logo" alt="Logo institusi" src="${esc(printLogo)}">` : `<div class="print-logo-placeholder">LOGO</div>`}
+            </div>
+            <div class="print-title-box">
+              <h1>${esc(settings.institutionName || '')}</h1>
+              <h2>${esc(settings.facultyName || '')}</h2>
+            </div>
+          </section>`}
+      <h2 style="text-align:center;margin:0 0 8px">${esc(settings.printTitle || 'LEMBAR CHECKLIST')}</h2>
       <div class="mini-grid">
         <div><strong>Nama Mahasiswa</strong><br>${esc(detail.registration.studentName)}</div>
         <div><strong>NIM</strong><br>${esc(detail.registration.nim)}</div>
@@ -626,7 +701,7 @@ function renderPrint(detail) {
             <th>No</th>
             <th>Item Checklist</th>
             <th>ACC</th>
-            <th>Petugas</th>
+            <th>Diperiksa oleh/Pejabat</th>
             <th>Tanggal</th>
             <th>Catatan</th>
           </tr>
@@ -643,7 +718,7 @@ function renderPrint(detail) {
         <div></div>
         <div class="signature-box">
           <div>${esc(settings.signatureCity || '')}, ${todayText()}</div>
-          <div>Dekan</div>
+          <div>${esc(settings.signerTitle || 'Dekan')}</div>
           <div class="signature-space"></div>
           <strong>${esc(settings.deanName || 'Nama Dekan')}</strong>
           <div>${settings.deanNip ? 'NIP/NIDN. ' + esc(settings.deanNip) : ''}</div>
@@ -736,9 +811,19 @@ function updateUserRoleFields() {
 
 function fillSettingsForm(settings) {
   const form = $('settingsForm');
-  ['logoUrl', 'appName', 'printTitle', 'institutionName', 'facultyName', 'deanName', 'deanNip', 'signatureCity'].forEach((name) => {
+  ['appName', 'printTitle', 'institutionName', 'facultyName', 'signerTitle', 'deanName', 'deanNip', 'signatureCity'].forEach((name) => {
     form.elements[name].value = settings[name] || '';
   });
+}
+
+function renderUploadSettings(data) {
+  const settings = (data && data.settings) || {};
+  $('logoFileStatus').textContent = settings.logoFileId ? 'Logo sudah tersimpan.' : 'Belum ada logo upload.';
+  $('letterheadFileStatus').textContent = settings.letterheadFileId ? 'Kop surat sudah tersimpan.' : 'Belum ada kop surat upload.';
+  const link = $('uploadFolderLink');
+  const folderUrl = (data && data.uploadFolderUrl) || '';
+  link.classList.toggle('d-none', !folderUrl);
+  link.href = folderUrl || '#';
 }
 
 function fillForm(formId, data) {
@@ -897,6 +982,58 @@ function waitForImages(root, timeoutMs) {
     })),
     new Promise((resolve) => setTimeout(resolve, timeoutMs))
   ]);
+}
+
+function fileToUploadPayload(file, maxBytes, allowedTypes) {
+  if (!file) return Promise.resolve(null);
+  const mimeType = inferMimeType(file);
+  if (allowedTypes.indexOf(mimeType) === -1) {
+    return Promise.reject(new Error('Format file tidak didukung.'));
+  }
+  if (file.size > maxBytes) {
+    const limit = (maxBytes / 1024 / 1024).toFixed(1).replace('.0', '');
+    return Promise.reject(new Error(`Ukuran file maksimal ${limit} MB.`));
+  }
+
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = String(reader.result || '');
+      resolve({
+        name: file.name,
+        mimeType,
+        base64: result.indexOf(',') === -1 ? result : result.split(',').pop()
+      });
+    };
+    reader.onerror = () => reject(new Error('File tidak dapat dibaca.'));
+    reader.readAsDataURL(file);
+  });
+}
+
+function inferMimeType(file) {
+  if (file.type) return file.type === 'image/jpg' ? 'image/jpeg' : file.type;
+  const extension = String(file.name || '').split('.').pop().toLowerCase();
+  return {
+    png: 'image/png',
+    jpg: 'image/jpeg',
+    jpeg: 'image/jpeg',
+    webp: 'image/webp',
+    pdf: 'application/pdf'
+  }[extension] || '';
+}
+
+function fitPrintToOnePage() {
+  const area = $('printArea');
+  const sheet = area.querySelector('.print-sheet');
+  if (!sheet) return;
+
+  area.classList.add('print-measuring');
+  sheet.style.zoom = '1';
+  const printableHeight = (297 - 16) * (96 / 25.4);
+  const contentHeight = sheet.scrollHeight + 4;
+  const scale = Math.max(0.42, Math.min(1, printableHeight / contentHeight));
+  sheet.style.zoom = scale.toFixed(3);
+  area.classList.remove('print-measuring');
 }
 
 async function run(task, showSpinner = true) {

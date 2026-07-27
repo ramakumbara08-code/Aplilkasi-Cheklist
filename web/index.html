@@ -281,6 +281,10 @@
                   <input class="form-control form-control-lg" name="fullName" required>
                 </label>
                 <label class="col-md-6 form-label-group">
+                  <span>Jabatan</span>
+                  <input class="form-control form-control-lg" name="jobTitle" placeholder="Contoh: Rektor, Dekan, Dosen">
+                </label>
+                <label class="col-md-6 form-label-group">
                   <span>Tipe Akun</span>
                   <select id="userRoleType" class="form-select form-select-lg" name="roleType" required>
                     <option value="SUPER_ADMIN">Admin Super</option>
@@ -315,13 +319,26 @@
             <section class="app-card">
               <div class="app-card-head"><h2 class="section-title mb-0">Pengaturan Cetak</h2></div>
               <form id="settingsForm" class="p-3 p-md-4 row g-3">
-                <label class="col-12 form-label-group"><span>URL Logo</span><input class="form-control form-control-lg" name="logoUrl" placeholder="https://.../logo.png"></label>
+                <label class="col-md-6 form-label-group">
+                  <span>Upload Logo</span>
+                  <input id="logoFile" class="form-control form-control-lg" name="logoFile" type="file" accept="image/png,image/jpeg,image/webp">
+                  <small id="logoFileStatus" class="text-muted"></small>
+                </label>
+                <label class="col-md-6 form-label-group">
+                  <span>Upload Kop Surat</span>
+                  <input id="letterheadFile" class="form-control form-control-lg" name="letterheadFile" type="file" accept="image/png,image/jpeg,image/webp">
+                  <small id="letterheadFileStatus" class="text-muted"></small>
+                </label>
+                <div class="col-12">
+                  <a id="uploadFolderLink" class="btn btn-light d-none" href="#" target="_blank" rel="noopener">Buka Folder Upload Drive</a>
+                </div>
                 <label class="col-md-6 form-label-group"><span>Nama Aplikasi</span><input class="form-control form-control-lg" name="appName"></label>
                 <label class="col-md-6 form-label-group"><span>Judul Print</span><input class="form-control form-control-lg" name="printTitle"></label>
                 <label class="col-md-6 form-label-group"><span>Institusi</span><input class="form-control form-control-lg" name="institutionName"></label>
                 <label class="col-md-6 form-label-group"><span>Fakultas / Unit</span><input class="form-control form-control-lg" name="facultyName"></label>
-                <label class="col-md-6 form-label-group"><span>Nama Dekan</span><input class="form-control form-control-lg" name="deanName"></label>
-                <label class="col-md-6 form-label-group"><span>NIP / NIDN Dekan</span><input class="form-control form-control-lg" name="deanNip"></label>
+                <label class="col-md-4 form-label-group"><span>Jabatan Penandatangan</span><input class="form-control form-control-lg" name="signerTitle" placeholder="Contoh: Dekan"></label>
+                <label class="col-md-4 form-label-group"><span>Nama Penandatangan</span><input class="form-control form-control-lg" name="deanName"></label>
+                <label class="col-md-4 form-label-group"><span>NIP / NIDN</span><input class="form-control form-control-lg" name="deanNip"></label>
                 <label class="col-md-6 form-label-group"><span>Kota TTD</span><input class="form-control form-control-lg" name="signatureCity"></label>
                 <div class="col-12">
                   <button class="btn btn-gradient btn-lg w-100" type="submit">Simpan Pengaturan</button>

@@ -4,13 +4,13 @@ Frontend ini berjalan di GitHub/Vercel, sedangkan backend dan database tetap mem
 
 ## Alur Deploy
 
-1. Upload file GAS utama ke Apps Script, termasuk file baru `Api.gs`.
+1. Upload file GAS utama ke Apps Script, termasuk `Api.gs` dan `Storage.gs`.
 2. Jalankan `setupApp()` sekali jika spreadsheet belum disiapkan.
 3. Deploy Apps Script sebagai Web App:
    - Execute as: `Me`
    - Who has access: `Anyone`
 4. Salin URL Web App GAS yang berakhiran `/exec`.
-5. Push folder `web` ke GitHub.
+5. Push folder `web`, folder root `api`, `index.html`, dan `vercel.json` ke GitHub.
 6. Import repository ke Vercel.
    - Jika repository berisi folder `gas` dan `web`, set `Root Directory` ke `web`.
 7. Tambahkan Environment Variable di Vercel:
@@ -62,3 +62,5 @@ Contohnya sudah ada di `.env.example`. File `.env.local` tidak ikut GitHub karen
 ## Catatan Penting
 
 Setiap kali kode GAS berubah, buat deployment versi baru di Apps Script lalu pastikan URL `/exec` yang dipakai Vercel masih deployment terbaru. Jika memakai URL deployment yang sama dengan opsi redeploy, environment Vercel tidak perlu diganti.
+
+Jalankan kembali `setupApp()` setelah memasang versi upload agar kolom `jobTitle`, metadata pejabat, dan bukti verifikasi ditambahkan ke Sheet. File logo, kop surat, dan bukti ACC disimpan ke satu folder Google Drive bernama `Aplikasi Checklist - Uploads`; kapasitasnya mengikuti kuota akun yang men-deploy GAS.

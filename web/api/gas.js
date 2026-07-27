@@ -1,5 +1,12 @@
+const DEFAULT_GAS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbwlMboQ40RN__ZAr7iVV983gbBJHzUveKsK8VKeXzB130valOMVXf-p0nY3EBMcHIxkug/exec';
+
 module.exports = async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store');
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+
+  if (req.method === 'OPTIONS') return res.status(204).end();
 
   if (req.method !== 'POST') {
     return res.status(405).json({
@@ -8,13 +15,7 @@ module.exports = async function handler(req, res) {
     });
   }
 
-  const gasUrl = process.env.GAS_WEB_APP_URL;
-  if (!gasUrl) {
-    return res.status(500).json({
-      ok: false,
-      error: { message: 'Environment GAS_WEB_APP_URL belum diatur di Vercel.' }
-    });
-  }
+  const gasUrl = process.env.GAS_WEB_APP_URL || DEFAULT_GAS_WEB_APP_URL;
 
   try {
     const body = typeof req.body === 'string' ? req.body : JSON.stringify(req.body || {});
